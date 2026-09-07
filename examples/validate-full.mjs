@@ -36,7 +36,28 @@ try {
       network: { allowInternetAccess: true },
     }),
   );
-  if (!sandbox) throw new Error("validation stopped because sandbox creation failed");
+  if (!sandbox) {
+    console.error("STOP sandbox creation failed; runtime validation cannot continue");
+  } else {
+    await validateSandbox(client, sandbox, validator);
+  }
+} finally {
+  if (sandbox) {
+    await validator.verify("sandbox.delete", () => sandbox.kill());
+    await sandbox.close();
+  }
+  await client.close();
+}
+
+console.log(
+  `SUMMARY tests=${validator.tests} passed=${validator.tests - validator.failures.length} failed=${validator.failures.length}`,
+);
+if (validator.failures.length) {
+  console.error(`FAILED ${validator.failures.join(", ")}`);
+  process.exitCode = 1;
+}
+
+async function validateSandbox(client, sandbox, validator) {
   console.log(`sandboxId=${sandbox.sandboxId}`);
 
   await validator.verify("manager.get", async () =>
@@ -68,20 +89,6 @@ try {
   } else {
     await validateRuntime(sandbox, validator);
   }
-} finally {
-  if (sandbox) {
-    await validator.verify("sandbox.delete", () => sandbox.kill());
-    await sandbox.close();
-  }
-  await client.close();
-}
-
-console.log(
-  `SUMMARY tests=${validator.tests} passed=${validator.tests - validator.failures.length} failed=${validator.failures.length}`,
-);
-if (validator.failures.length) {
-  console.error(`FAILED ${validator.failures.join(", ")}`);
-  process.exitCode = 1;
 }
 
 async function validateRuntime(sandbox, validator) {
