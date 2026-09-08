@@ -1,14 +1,25 @@
 import { Buffer } from "node:buffer";
 import type { MockAgent } from "undici";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { Commands } from "../src/commands.js";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
+import { type CommandHandle, Commands, type RunOptions } from "../src/commands.js";
 import { CommandExitError } from "../src/errors.js";
 import { Transport } from "../src/internal/transport.js";
+import type { CommandResult } from "../src/models.js";
 import { connectBody, mockAgent } from "./helpers.js";
 
 describe("Commands", () => {
   let agent: MockAgent | undefined;
   afterEach(async () => agent?.close());
+
+  it("infers run results for literal and dynamic options", () => {
+    const foreground = (commands: Commands) => commands.run("true");
+    const background = (commands: Commands) => commands.run("true", { background: true });
+    const dynamic = (commands: Commands, options: RunOptions) => commands.run("true", options);
+
+    expectTypeOf(foreground).returns.toEqualTypeOf<Promise<CommandResult>>();
+    expectTypeOf(background).returns.toEqualTypeOf<Promise<CommandHandle>>();
+    expectTypeOf(dynamic).returns.toEqualTypeOf<Promise<CommandResult | CommandHandle>>();
+  });
 
   it("collects stdout and stderr from the same event", async () => {
     agent = mockAgent();

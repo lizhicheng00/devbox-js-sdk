@@ -118,6 +118,7 @@ export class Commands {
 
   async run(command: string, options: RunOptions & { background: true }): Promise<CommandHandle>;
   async run(command: string, options?: RunOptions & { background?: false }): Promise<CommandResult>;
+  async run(command: string, options: RunOptions): Promise<CommandResult | CommandHandle>;
   async run(command: string, options: RunOptions = {}): Promise<CommandResult | CommandHandle> {
     if (options.background && (options.onStdout || options.onStderr)) {
       throw new TypeError("background output callbacks belong on handle.wait()");
